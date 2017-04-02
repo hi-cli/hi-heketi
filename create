@@ -25,13 +25,14 @@
 ###############################################################################
 
 source "${HI_CLI_HOME}/bin/colors"
-source "${HI_CLI_HOME}/bin/clap"
+#source "${HI_CLI_HOME}/bin/clap"
 source "${HI_CLI_HOME}/bin/logging"
 source "${HI_CLI_HOME}/bin/utils"
 ###############################################################################
 
 function run() {
-
+  log_debug "CMD_LINE: ${CMD_LINE}"
+  log_debug "size: ${size}"
   if [ "${size}" == "" ];
   then
     # usage

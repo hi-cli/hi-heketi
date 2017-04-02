@@ -11,8 +11,8 @@ source "${HI_CLI_HOME}/bin/utils"
 function show_exec_usage() {
   show_version
   echo "usages: "
-  echo "  ${app} exec pod=the-pod-id cmd="'"'"ls -l"'"'"  "
-  echo "  ${app} exec pod=the-pod-id cmd="'"'"any-shell-command"'"'"  "
+  echo "  ${hi_app} exec pod=the-pod-id cmd="'"'"ls -l"'"'"  "
+  echo "  ${hi_app} exec pod=the-pod-id cmd="'"'"any-shell-command"'"'"  "
 }
 
 function exec_command_on_volume() {
