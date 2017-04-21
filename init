@@ -11,13 +11,13 @@ source "${HI_CLI_HOME}/bin/utils"
 function show_exec_usage() {
   show_version
   echo "usages: "
-  echo "  ${hi_app} exec pod=the-pod-id cmd="'"'"ls -l"'"'"  "
-  echo "  ${hi_app} exec pod=the-pod-id cmd="'"'"any-shell-command"'"'"  "
+  echo "  ${hi_app} heketi exec pod=the-pod-id cmd="'"'"ls -l"'"'"  "
+  echo "  ${hi_app} heketi exec pod=the-pod-id cmd="'"'"any-shell-command"'"'"  "
 }
 
 function exec_command_on_volume() {
   
-  echo "execute command on pv: $1 cmd: "'"'"$2"'"'" "
+  logo_info "execute command on pv: $1 cmd: "'"'"$2"'"'" "
 
   if [ "$2" == "" ]; then
     show_pv_usage
@@ -33,7 +33,7 @@ function exec_command_on_volume() {
   volume=$(oc describe pv $1 | grep Path | awk '{print $2}' | sed s/vol_//g) 
   cmd=$2
 
-  echo volume: $volume
+  log_debug "volume: $volume"
 
   # get all glusterfs pods
   glusterfs_pods=$(oc get po -n default | grep glusterfs | awk '{print $1}')
@@ -65,7 +65,7 @@ EOF
 
 function exec_command() {
   
-  echo "execute command on pod: $1 cmd: $2"
+  log_info "execute command on pod: $1 cmd: $2"
 
   if [ "$2" == "" ] || [ "$1" == "" ]; then
     show_pv_usage
@@ -81,6 +81,11 @@ EOF
 }
 
 function delete_pv() {
+  oc whoami > /dev/null   
+  if [ $? != 0 ]; then
+    log_error "you are not allowed to delete pv"
+    return 1
+  fi
   name=$1
   if [ "${name}" == "" ]; 
   then
@@ -88,11 +93,11 @@ function delete_pv() {
     exit
   fi
   if [ "$delete" == "delete" ]; then 
-    log_info "deleting pv ${name}"
+    log_info "deleting pv ${name}, please wait ..."
     pv_info=$(oc get pv ${name} -o json)
     if [ $? == 0 ]; 
     then
-      log_info "${pv_info}"
+      log_debug "${pv_info}"
 
       parse_json vol_path "${pv_info}" spec glusterfs path
       
@@ -106,6 +111,11 @@ function delete_pv() {
 }
 
 function delete_pvc() {
+  oc whoami > /dev/null   
+  if [ $? != 0 ]; then
+    log_error "you are not allowed to delete pvc"
+    return 1
+  fi
   log_debug $pv
   pv_name=$(oc get pvc | grep ${name} | awk '{print $3}')
   log_debug ${pv_name}
@@ -126,6 +136,16 @@ function delete_pvc() {
 }
 
 function create_pv() {
+  log_debug "create_pv is called"
+
+  oc whoami > /dev/null
+  if [ $? != 0 ]; then
+    log_error "you are not allowed to create pv"
+    return 1
+  fi
+
+  log_info "creating pv, please wait ..."
+
   mkdir -p ${module_dir}/endpoints
   ep_file="${module_dir}/endpoints/endpoints.json"
   
@@ -133,16 +153,28 @@ function create_pv() {
 
   ep=$(cat ${ep_file})
 
-  log_debug "${ep}"
+  log_debug "created pv with ep: ${ep}"
+
+  if [ "${ep}" == "" ]; then
+    log_error "volume is not created"
+    return 1
+  fi
 
   parse_json pv_name "${ep}" metadata name
 
+  if [ $? != 0 ]; then
+    log_error "wrong endpoint"
+    return 2
+  fi
+
+  log_info "creating endpoint"
   oc create -f ${ep_file}
 
   parse_json vol_path "${ep}" spec glusterfs path
 
-  rm -rf ${ep_file}
-  # mv ${ep_file} ${module_dir}/endpoints/${vol_path}.json
+  # rm -rf ${ep_file}
+  mkdir -p ${working_dir}/endpoints/
+  mv ${ep_file} ${working_dir}/endpoints/${vol_path}.json
 
   if [ "$cmd" == "" ]; then
     cmd="chmod 777 {}"
@@ -150,11 +182,16 @@ function create_pv() {
   if [ "$uid" != "" ]; then
     cmd="chown ${uid}:${uid} {}"
   fi
-
+  log_debug "exec_command_on_volume ${pv_name} ${cmd}"
   exec_command_on_volume "${pv_name}" "${cmd}"
 }
 
 function create_pvc() {
+  oc whoami > /dev/null   
+  if [ $? != 0 ]; then
+    log_error "you are not allowed to create pvc"
+    return 1
+  fi
   echo "create pvc name: ${name} size: ${size}"
   if [ "${mode}" == "" ]; then
     mode="ReadWriteMany"

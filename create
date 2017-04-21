@@ -40,9 +40,15 @@ function run() {
     exit
   fi
 
-  create_pv
+  if [ "${pv}" == "pv" ] && [ "${name}" != "" ]; 
+  then
+    log_debug "create pv"
+    create_pv
+  fi
+
   if [ "${pvc}" == "pvc" ] && [ "${name}" != "" ]; 
   then
+    log_debug "create pvc"
     create_pvc
   fi
 
