@@ -17,7 +17,7 @@ function show_exec_usage() {
 
 function exec_command_on_volume() {
   
-  logo_info "execute command on pv: $1 cmd: "'"'"$2"'"'" "
+  log_debug "exec_command_on_volume pv: $1 cmd: $2 "
 
   if [ "$2" == "" ]; then
     show_pv_usage
