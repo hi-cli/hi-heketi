@@ -24,13 +24,17 @@
 
 source "${HI_CLI_HOME}/bin/colors"
 
-cmd="hi volume"
+cmd="hi heketi"
 
 function show_usage() {
   echo "usages: "
-  echo "  ${cmd} create size=10 "
-  echo "  ${cmd} delete name=pv-name"
-  echo "  ${cmd} edit size=8 cmd="'"'"chmod 644 {}"'"'" "
-  echo "  ${cmd} edit size=8 cmd="'"'"chown 27:27 {}"'"'" "
-  echo "  ${cmd} edit size=8 uid=27"
+  echo ""
+  echo "crate pv, volume size 10G:  "
+  echo "  ${cmd} create pv size=10 "
+  echo "create pv, volume size 8G, then create pvc, name my-pvc-name, uid is 27, the uid is the user id of target pod"
+  echo "  ${cmd} create pv size=8 pvc name=my-pvc-name uid=27"
+  echo "delete pv, name my-pv-name, (run oc get pv to query pv name)"
+  echo "  ${cmd} delete pv name=my-pv-name"
+  echo "delete pv and pvc, pvc name is my-pvc-name"
+  echo "  ${cmd} delete pvc name=my-pvc-name"
 }
