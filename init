@@ -86,15 +86,15 @@ function delete_pv() {
     log_error "you are not allowed to delete pv"
     return 1
   fi
-  name=$1
-  if [ "${name}" == "" ]; 
+  pv_name=$1
+  if [ "${pv_name}" == "" ]; 
   then
     log_warn "pv name is null"
     exit
   fi
   if [ "$delete" == "delete" ]; then 
-    log_info "deleting pv ${name}, please wait ..."
-    pv_info=$(oc get pv ${name} -o json)
+    log_info "deleting pv ${pv_name}, please wait ..."
+    pv_info=$(oc get pv ${pv_name} -o json)
     if [ $? == 0 ]; 
     then
       log_debug "${pv_info}"
@@ -103,9 +103,9 @@ function delete_pv() {
       
       volume=${vol_path/vol_/}
       heketi-cli volume delete ${volume}
-      oc delete pv $name
+      oc delete pv ${pv_name}
     else
-      log_warn "pv $name not found"
+      log_warn "pv ${pv_name} not found"
     fi
   fi
 }
