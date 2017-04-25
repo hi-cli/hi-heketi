@@ -38,5 +38,6 @@ function show_usage() {
   echo "delete pv and pvc, pvc name is my-pvc-name"
   echo "  ${cmd} delete pvc name=my-pvc-name"
   echo "exec command line inside glusterfs by specify pv name"
-  echo "  ${cmd} exec pv name=my-pvc-name cmd='shell command line' "
+  echo "  ${cmd} exec pv name=my-pvc-name cmd='ls -l {}' "
+  echo "  (NOTES: above example exec the ls -l command, {} is the pv ) "
 }
