@@ -8,6 +8,18 @@
 
 source "${HI_CLI_HOME}/bin/utils"
 
+if [ ${heketi_cli_server} == "" ]; then
+  heketi_cli_server=${HEKETI_CLI_SERVER}
+fi
+heketi_credential=
+if [ ${heketi_user} != "" ] && [ ${heketi_password} != "" ]; then
+  heketi_credential="--user ${heketi_user} --secret ${heketi_password}"
+fi
+
+export heketi_cli="heketi-cli -s ${heketi_cli_server} ${heketi_credential}"
+
+log_debug "heketi_cli: ${heketi_cli}"
+
 function show_exec_usage() {
   show_version
   echo "usages: "
@@ -41,7 +53,7 @@ function exec_command_on_volume() {
   if [ "$volume" != "" ] ; then
     
     # get all volume path
-    volumes=$(awk "/${volume}/,/Name/" <<<  "$(heketi-cli topology info)" | grep Path | awk '{print $2}')
+    volumes=$(awk "/${volume}/,/Name/" <<<  "$(${heketi_cli} topology info)" | grep Path | awk '{print $2}')
     
     # get all glusterfs pods
     glusterfs_pods=$(oc get po -n default | grep glusterfs | awk '{print $1}')
@@ -102,7 +114,7 @@ function delete_pv() {
       parse_json vol_path "${pv_info}" spec glusterfs path
       
       volume=${vol_path/vol_/}
-      heketi-cli volume delete ${volume}
+      ${heketi_cli} volume delete ${volume}
       oc delete pv ${pv_name}
     else
       log_warn "pv ${pv_name} not found"
@@ -149,7 +161,7 @@ function create_pv() {
   mkdir -p ${module_dir}/endpoints
   ep_file="${module_dir}/endpoints/endpoints.json"
   
-  heketi-cli volume create --size=${size} --persistent-volume --persistent-volume-endpoint=heketi-storage-endpoints > ${ep_file}
+  ${heketi_cli} volume create --size=${size} --persistent-volume --persistent-volume-endpoint=heketi-storage-endpoints > ${ep_file}
 
   ep=$(cat ${ep_file})
 
@@ -232,9 +244,6 @@ function main() {
     if [ "$net" == "vpn" ] || [ "$vpn" == "vpn" ] ; then
       network_option=" -l network=vpn "
     fi
-
-    # export HEKETI_CLI_SERVER="http://$(oc get route -n default $network_option | grep heketi | awk '{print $2}')"
-    echo connecting to heketi server $HEKETI_CLI_SERVER
 
     if [ "$delete" == "delete" ] && [ "$pv" != "pv" ]; then 
       delete_pv
