@@ -8,17 +8,19 @@
 
 source "${HI_CLI_HOME}/bin/utils"
 
-if [ ${heketi_cli_server} == "" ]; then
+if [ "${heketi_cli_server}" == "" ]; then
   heketi_cli_server=${HEKETI_CLI_SERVER}
 fi
 heketi_credential=
-if [ ${heketi_user} != "" ] && [ ${heketi_password} != "" ]; then
-  heketi_credential="--user ${heketi_user} --secret ${heketi_password}"
+if [ "${heketi_user}" != "" ] && [ "${heketi_password}" != "" ]; then
+  heketi_credential="--user=${heketi_user} --secret=${heketi_password}"
 fi
 
 export heketi_cli="heketi-cli -s ${heketi_cli_server} ${heketi_credential}"
 
 log_debug "heketi_cli: ${heketi_cli}"
+
+hi_alias="${heketi_cli}"
 
 function show_exec_usage() {
   show_version
@@ -144,6 +146,34 @@ function delete_pvc() {
     log_debug "pvc ${name} is deleted"
   else
     log_warn "pvc ${name} not found"  
+  fi
+}
+
+function expand_pvc() {
+  oc whoami > /dev/null   
+  if [ $? != 0 ]; then
+    log_error "you are not allowed to delete pvc"
+    return 1
+  fi
+  log_debug $pv
+  pv_name=$(oc get pvc | grep ${name} | awk '{print $3}')
+  log_debug ${pv_name}
+
+  log_info  "expanding ... pvc, name: $name"
+  res=1
+  if [ "${pv_name}" != "" ] && [ $(oc get pvc | grep "${pv_name}" | grep "Bound" | wc -l) != 0 ]; 
+  then
+    pv_info=$(oc get pv ${pv_name} -o json)
+    parse_json vol_path "${pv_info}" spec glusterfs path
+    log_debug "vol_path: ${vol_path}"
+    ${heketi_cli} volume expand --expand-size=${size} --volume=${vol_path}
+    res=$?
+    log_debug "expanded volume ${vol_path} of pv ${pv_name}"
+  fi
+
+  if [ "${res}" == 0 ]; then
+    # change pv, pvc
+    echo "change pv,pvc"
   fi
 }
 
