@@ -46,7 +46,7 @@ function run() {
     exit
   fi
 
-  exec_command_on_volume "${name}" "$cmd"
+  # exec_command_on_volume "${name}" "$cmd"
 
   result=$?
 
