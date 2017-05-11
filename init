@@ -152,28 +152,52 @@ function delete_pvc() {
 function expand_pvc() {
   oc whoami > /dev/null   
   if [ $? != 0 ]; then
-    log_error "you are not allowed to delete pvc"
+    log_error "you are not allowed to expand pvc"
     return 1
   fi
   log_debug $pv
   pv_name=$(oc get pvc | grep ${name} | awk '{print $3}')
-  log_debug ${pv_name}
+  log_debug "pv_name: ${pv_name}"
 
-  log_info  "expanding ... pvc, name: $name"
+  log_info  "expanding pvc, name: $name ..."
   res=1
   if [ "${pv_name}" != "" ] && [ $(oc get pvc | grep "${pv_name}" | grep "Bound" | wc -l) != 0 ]; 
   then
+
     pv_info=$(oc get pv ${pv_name} -o json)
     parse_json vol_path "${pv_info}" spec glusterfs path
-    log_debug "vol_path: ${vol_path}"
-    ${heketi_cli} volume expand --expand-size=${size} --volume=${vol_path}
+    
+    log_debug "start expand vol_path: ${vol_path}"
+    expand_cli="${heketi_cli} volume expand --expand-size=${size} --volume=${vol_path/vol_/}"
+    log_debug "${expand_cli}"
+    ${expand_cli}
     res=$?
     log_debug "expanded volume ${vol_path} of pv ${pv_name}"
   fi
 
-  if [ "${res}" == 0 ]; then
+  if [ ${res} == 0 ]; then
     # change pv, pvc
-    echo "change pv,pvc"
+    log_info "changing the capacity of pv and pvc ..."
+
+    parse_json prev_capacity "${pv_info}" spec capacity storage
+    log_debug "prev_capacity: ${prev_capacity}"
+    prev_capacity_num=${prev_capacity/Gi/}
+    log_debug "prev_capacity_num: ${prev_capacity_num}"
+    new_capacity=$((prev_capacity_num + size))Gi
+    log_debug "new_capacity: ${new_capacity}"
+
+    new_pv_info=$(echo ${pv_info} | sed "s/${prev_capacity}/${new_capacity}/g")
+    log_debug "${new_pv_info}"
+    echo ${new_pv_info} | oc apply -f -
+
+    pvc_info=$(oc get pvc ${name} -o json)
+    new_pvc_info=$(echo ${pvc_info} | sed "s/${prev_capacity}/${new_capacity}/g")
+    log_debug "${new_pvc_info}"
+    echo ${new_pvc_info} | oc apply -f -
+
+  else
+    log_debug "failed to expand" 
+    return 1 
   fi
 }
 
