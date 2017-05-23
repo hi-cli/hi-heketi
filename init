@@ -160,19 +160,20 @@ function expand_pvc() {
   log_debug "pv_name: ${pv_name}"
 
   log_info  "expanding pvc, name: $name ..."
-  res=1
+  res=0
   if [ "${pv_name}" != "" ] && [ $(oc get pvc | grep "${pv_name}" | grep "Bound" | wc -l) != 0 ]; 
   then
 
     pv_info=$(oc get pv ${pv_name} -o json)
     parse_json vol_path "${pv_info}" spec glusterfs path
-    
-    log_debug "start expand vol_path: ${vol_path}"
-    expand_cli="${heketi_cli} volume expand --expand-size=${size} --volume=${vol_path/vol_/}"
-    log_debug "${expand_cli}"
-    ${expand_cli}
-    res=$?
-    log_debug "expanded volume ${vol_path} of pv ${pv_name}"
+    if [ ${size} != 0 ]; then
+      log_debug "start expand vol_path: ${vol_path}"
+      expand_cli="${heketi_cli} volume expand --expand-size=${size} --volume=${vol_path/vol_/}"
+      log_debug "${expand_cli}"
+      ${expand_cli}
+      res=$?
+      log_debug "expanded volume ${vol_path} of pv ${pv_name}"
+    fi
   fi
 
   if [ ${res} == 0 ]; then
@@ -189,6 +190,8 @@ function expand_pvc() {
     new_pv_info=$(echo ${pv_info} | sed "s/${prev_capacity}/${new_capacity}/g")
     log_debug "${new_pv_info}"
     echo ${new_pv_info} | oc apply -f -
+
+    sleep 1
 
     pvc_info=$(oc get pvc ${name} -o json)
     new_pvc_info=$(echo ${pvc_info} | sed "s/${prev_capacity}/${new_capacity}/g")
