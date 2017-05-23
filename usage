@@ -29,7 +29,7 @@ cmd="hi heketi"
 function show_usage() {
   echo "usages: "
   echo ""
-  echo "crate pv, volume size 10G:  "
+  echo "create pv, volume size 10G:  "
   echo "  ${cmd} create pv size=10 "
   echo "create pv, volume size 8G, then create pvc, name my-pvc-name, uid is 27, the uid is the user id of target pod"
   echo "  ${cmd} create pv size=8 pvc name=my-pvc-name uid=27"

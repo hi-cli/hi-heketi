@@ -33,24 +33,14 @@ source "${HI_CLI_HOME}/bin/utils"
 function run() {
   log_debug "CMD_LINE: ${CMD_LINE}"
   log_debug "size: ${size}"
-  if [ "${size}" == "" ];
+  if [ "${pvc}" == "" ] || [ "${name}" == "" ] || [ "${size}" == "" ];
   then
     # usage
-    log_warn "please specify size"
+    log_warn "please specify pvc name=pvc-name size=xxx"
     exit
   fi
 
-  if [ "${pv}" == "pv" ]; 
-  then
-    log_debug "create pv"
-    create_pv
-  fi
-
-  if [ "${pvc}" == "pvc" ] && [ "${name}" != "" ]; 
-  then
-    log_debug "create pvc"
-    create_pvc
-  fi
+  expand_pvc "${name}"
 
   result=$?
 

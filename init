@@ -8,6 +8,20 @@
 
 source "${HI_CLI_HOME}/bin/utils"
 
+if [ "${heketi_cli_server}" == "" ]; then
+  heketi_cli_server=${HEKETI_CLI_SERVER}
+fi
+heketi_credential=
+if [ "${heketi_user}" != "" ] && [ "${heketi_password}" != "" ]; then
+  heketi_credential="--user=${heketi_user} --secret=${heketi_password}"
+fi
+
+export heketi_cli="heketi-cli -s ${heketi_cli_server} ${heketi_credential}"
+
+log_debug "heketi_cli: ${heketi_cli}"
+
+hi_alias="${heketi_cli}"
+
 function show_exec_usage() {
   show_version
   echo "usages: "
@@ -41,7 +55,7 @@ function exec_command_on_volume() {
   if [ "$volume" != "" ] ; then
     
     # get all volume path
-    volumes=$(awk "/${volume}/,/Name/" <<<  "$(heketi-cli topology info)" | grep Path | awk '{print $2}')
+    volumes=$(awk "/${volume}/,/Name/" <<<  "$(${heketi_cli} topology info)" | grep Path | awk '{print $2}')
     
     # get all glusterfs pods
     glusterfs_pods=$(oc get po -n default | grep glusterfs | awk '{print $1}')
@@ -102,7 +116,7 @@ function delete_pv() {
       parse_json vol_path "${pv_info}" spec glusterfs path
       
       volume=${vol_path/vol_/}
-      heketi-cli volume delete ${volume}
+      ${heketi_cli} volume delete ${volume}
       oc delete pv ${pv_name}
     else
       log_warn "pv ${pv_name} not found"
@@ -135,6 +149,61 @@ function delete_pvc() {
   fi
 }
 
+function expand_pvc() {
+  oc whoami > /dev/null   
+  if [ $? != 0 ]; then
+    log_error "you are not allowed to expand pvc"
+    return 1
+  fi
+  log_debug $pv
+  pv_name=$(oc get pvc | grep ${name} | awk '{print $3}')
+  log_debug "pv_name: ${pv_name}"
+
+  log_info  "expanding pvc, name: $name ..."
+  res=0
+  if [ "${pv_name}" != "" ] && [ $(oc get pvc | grep "${pv_name}" | grep "Bound" | wc -l) != 0 ]; 
+  then
+
+    pv_info=$(oc get pv ${pv_name} -o json)
+    parse_json vol_path "${pv_info}" spec glusterfs path
+    if [ ${size} != 0 ]; then
+      log_debug "start expand vol_path: ${vol_path}"
+      expand_cli="${heketi_cli} volume expand --expand-size=${size} --volume=${vol_path/vol_/}"
+      log_debug "${expand_cli}"
+      ${expand_cli}
+      res=$?
+      log_debug "expanded volume ${vol_path} of pv ${pv_name}"
+    fi
+  fi
+
+  if [ ${res} == 0 ]; then
+    # change pv, pvc
+    log_info "changing the capacity of pv and pvc ..."
+
+    parse_json prev_capacity "${pv_info}" spec capacity storage
+    log_debug "prev_capacity: ${prev_capacity}"
+    prev_capacity_num=${prev_capacity/Gi/}
+    log_debug "prev_capacity_num: ${prev_capacity_num}"
+    new_capacity=$((prev_capacity_num + size))Gi
+    log_debug "new_capacity: ${new_capacity}"
+
+    new_pv_info=$(echo ${pv_info} | sed "s/${prev_capacity}/${new_capacity}/g")
+    log_debug "${new_pv_info}"
+    echo ${new_pv_info} | oc apply -f -
+
+    sleep 1
+
+    pvc_info=$(oc get pvc ${name} -o json)
+    new_pvc_info=$(echo ${pvc_info} | sed "s/${prev_capacity}/${new_capacity}/g")
+    log_debug "${new_pvc_info}"
+    echo ${new_pvc_info} | oc apply -f -
+
+  else
+    log_debug "failed to expand" 
+    return 1 
+  fi
+}
+
 function create_pv() {
   log_debug "create_pv is called"
 
@@ -149,7 +218,7 @@ function create_pv() {
   mkdir -p ${module_dir}/endpoints
   ep_file="${module_dir}/endpoints/endpoints.json"
   
-  heketi-cli volume create --size=${size} --persistent-volume --persistent-volume-endpoint=heketi-storage-endpoints > ${ep_file}
+  ${heketi_cli} volume create --size=${size} --persistent-volume --persistent-volume-endpoint=heketi-storage-endpoints > ${ep_file}
 
   ep=$(cat ${ep_file})
 
@@ -232,9 +301,6 @@ function main() {
     if [ "$net" == "vpn" ] || [ "$vpn" == "vpn" ] ; then
       network_option=" -l network=vpn "
     fi
-
-    # export HEKETI_CLI_SERVER="http://$(oc get route -n default $network_option | grep heketi | awk '{print $2}')"
-    echo connecting to heketi server $HEKETI_CLI_SERVER
 
     if [ "$delete" == "delete" ] && [ "$pv" != "pv" ]; then 
       delete_pv
