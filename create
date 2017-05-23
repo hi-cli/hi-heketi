@@ -32,24 +32,32 @@ source "${HI_CLI_HOME}/bin/utils"
 
 function run() {
   log_debug "CMD_LINE: ${CMD_LINE}"
-  log_debug "size: ${size}"
-  if [ "${size}" == "" ];
-  then
-    # usage
-    log_warn "please specify size"
-    exit
-  fi
 
-  if [ "${pv}" == "pv" ]; 
+  if [ "${endpoints}" == "endpoints" ]; 
   then
-    log_debug "create pv"
-    create_pv
-  fi
+    log_debug "create endpoints"
+    create_endpoints
+  else
+    log_debug "size: ${size}"
 
-  if [ "${pvc}" == "pvc" ] && [ "${name}" != "" ]; 
-  then
-    log_debug "create pvc"
-    create_pvc
+    if [ "${size}" == "" ];
+    then
+      # usage
+      log_warn "please specify size"
+      exit
+    fi
+
+    if [ "${pv}" == "pv" ]; 
+    then
+      log_debug "create pv"
+      create_pv
+    fi
+
+    if [ "${pvc}" == "pvc" ] && [ "${name}" != "" ]; 
+    then
+      log_debug "create pvc"
+      create_pvc
+    fi
   fi
 
   result=$?
