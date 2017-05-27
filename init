@@ -317,7 +317,7 @@ glusterfs_svc="$(cat <<-EOF
 apiVersion: v1
 kind: Service
 metadata:
-  name: glusterfs-cluster
+  name: heketi-storage-endpoints
 spec:
   ports:
   - port: 1
@@ -343,7 +343,7 @@ _EOF_
 apiVersion: v1
 kind: Service
 metadata:
-  name: glusterfs-cluster
+  name: heketi-storage-endpoints
 spec:
   ports:
   - port: 1
