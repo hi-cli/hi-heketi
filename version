@@ -10,7 +10,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#    http:#www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,27 +19,19 @@
 # limitations under the License.
 #
 # Author: John Deng (john.deng@outlook.com)
-# Updated: 2017-02-11
+# Updated: Mon Mar 27 23:24:29 CST 2017
+# Module: cicd
+# Submodule: 
+# Command: version
 ###############################################################################
 
 source "${HI_CLI_HOME}/bin/colors"
+source "${HI_CLI_HOME}/bin/logging"
+###############################################################################
+function run() {
+  
+  log_info "version: 1.0.0"
 
-cmd="hi heketi"
-
-function show_usage() {
-  echo "usages: "
-  echo ""
-  echo "create pv, volume size 10G:  "
-  echo "  ${cmd} create pv size=10 "
-  echo "create pv, volume size 8G, then create pvc, name my-pvc-name, uid is 27, the uid is the user id of target pod"
-  echo "  ${cmd} create pv size=8 pvc name=my-pvc-name uid=27"
-  echo "delete pv, name my-pv-name, (run oc get pv to query pv name)"
-  echo "  ${cmd} delete pv name=my-pv-name"
-  echo "delete pv and pvc, pvc name is my-pvc-name"
-  echo "  ${cmd} delete pvc name=my-pvc-name"
-  echo "exec command line inside glusterfs by specify pv name"
-  echo "  ${cmd} exec pv name=my-pvc-name cmd='ls -l {}' "
-  echo "  (NOTES: above example exec the ls -l command, {} is the pv ) "
-  echo "expand command expends the storage by specify pvc name and size"
-  echo "  ${cmd} expand pvc name=registry-claim size=100 "
 }
+
+###############################################################################
