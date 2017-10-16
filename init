@@ -40,8 +40,8 @@ function exec_command_on_volume() {
 
   # NOTE: assume that glusterfs is deployed on default project
   current_project=$(oc projects | grep "*" | awk '{print $2}')
-  if [ "$current_project" != "default" ]; then
-    oc project default
+  if [ "$current_project" != "${glusterfs_project}" ]; then
+    oc project ${glusterfs_project}
   fi 
 
   volume=$(oc describe pv $1 | grep Path | awk '{print $2}' | sed s/vol_//g) 
@@ -50,7 +50,7 @@ function exec_command_on_volume() {
   log_debug "volume: $volume"
 
   # get all glusterfs pods
-  glusterfs_pods=$(oc get po -n default | grep glusterfs | awk '{print $1}')
+  glusterfs_pods=$(oc get po -n ${glusterfs_project} | grep glusterfs | awk '{print $1}')
 
   if [ "$volume" != "" ] ; then
     
@@ -58,7 +58,7 @@ function exec_command_on_volume() {
     volumes=$(awk "/${volume}/,/Name/" <<<  "$(${heketi_cli} topology info)" | grep Path | awk '{print $2}')
     
     # get all glusterfs pods
-    glusterfs_pods=$(oc get po -n default | grep glusterfs | awk '{print $1}')
+    glusterfs_pods=$(oc get po -n ${glusterfs_project} | grep glusterfs | awk '{print $1}')
 
     while read p; do
       oc rsh $p <<EOF
