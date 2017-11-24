@@ -30,7 +30,7 @@ source "${HI_CLI_HOME}/bin/logging"
 ###############################################################################
 function run() {
   
-  log_info "version: 1.0.0"
+  log_info "version: 1.0.1"
 
 }
 

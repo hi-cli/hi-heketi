@@ -8,6 +8,9 @@
 
 source "${HI_CLI_HOME}/bin/utils"
 
+parser="${HI_CLI_HOME}/utils/parser.py"
+
+
 if [ "${heketi_cli_server}" == "" ]; then
   heketi_cli_server=${HEKETI_CLI_SERVER}
 fi
@@ -113,7 +116,8 @@ function delete_pv() {
     then
       log_debug "${pv_info}"
 
-      parse_json vol_path "${pv_info}" spec glusterfs path
+      # parse_json vol_path "${pv_info}" spec glusterfs path
+      vol_path=$(python ${parser} json "${pv_info}" spec glusterfs path)
       
       volume=${vol_path/vol_/}
       ${heketi_cli} volume delete ${volume}
@@ -165,7 +169,8 @@ function expand_pvc() {
   then
 
     pv_info=$(oc get pv ${pv_name} -o json)
-    parse_json vol_path "${pv_info}" spec glusterfs path
+    # parse_json vol_path "${pv_info}" spec glusterfs path
+    vol_path=$(python ${parser} json "${pv_info}" spec glusterfs path)
     if [ ${size} != 0 ]; then
       log_debug "start expand vol_path: ${vol_path}"
       expand_cli="${heketi_cli} volume expand --expand-size=${size} --volume=${vol_path/vol_/}"
@@ -180,7 +185,8 @@ function expand_pvc() {
     # change pv, pvc
     log_info "changing the capacity of pv and pvc ..."
 
-    parse_json prev_capacity "${pv_info}" spec capacity storage
+    # parse_json prev_capacity "${pv_info}" spec capacity storage
+    prev_capacity=$(python ${parser} json "${pv_info}" spec capacity storage)
     log_debug "prev_capacity: ${prev_capacity}"
     prev_capacity_num=${prev_capacity/Gi/}
     log_debug "prev_capacity_num: ${prev_capacity_num}"
@@ -229,8 +235,8 @@ function create_pv() {
     return 1
   fi
 
-  parse_json pv_name "${ep}" metadata name
-
+  # parse_json pv_name "${ep}" metadata name
+  pv_name=$(python ${parser} json "${ep}" metadata name)
   if [ $? != 0 ]; then
     log_error "wrong endpoint"
     return 2
@@ -239,8 +245,8 @@ function create_pv() {
   log_info "creating endpoint"
   oc create -f ${ep_file}
 
-  parse_json vol_path "${ep}" spec glusterfs path
-
+  # parse_json vol_path "${ep}" spec glusterfs path
+  vol_path=$(python ${parser} json "${ep}" spec glusterfs path)
   # rm -rf ${ep_file}
   mkdir -p ${working_dir}/endpoints/
   mv ${ep_file} ${working_dir}/endpoints/${vol_path}.json
